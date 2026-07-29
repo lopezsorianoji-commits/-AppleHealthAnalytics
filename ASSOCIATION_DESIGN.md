@@ -47,10 +47,8 @@ El módulo opera exclusivamente sobre entidades de dominio y encapsula toda la l
    ├── Recopilar WorkoutRecord candidatos que contengan el intervalo completo
    └── Si hay más de un candidato → AssociationSelector elige el más específico
 
-4. Construcción del resultado (AssociationResult)
-   ├── Agrupar HealthRecord por WorkoutRecord asociado
-   ├── Identificar WorkoutRecord sin mediciones asociadas
-   └── Identificar HealthRecord sin entrenamiento asociado
+4. Construcción de AssociationResult
+   └── AssociationService materializa el contrato de salida del módulo
 
 5. Salida
    └── AssociationResult (determinista, recalculado por completo)
@@ -97,12 +95,7 @@ HealthRecord.fecha_fin      ≤  WorkoutRecord.fecha_fin
 
 ### AssociationResult
 
-DTO (Data Transfer Object) o contrato de salida del módulo. No es un componente con lógica ni una entidad de dominio.
-
-- Contenedor del resultado: agrupaciones, registros huérfanos y entrenamientos vacíos.
-- Exponer agrupaciones WorkoutRecord → HealthRecord[].
-- Exponer listas de entrenamientos sin mediciones y mediciones sin entrenamiento.
-- Servir como contrato de salida sin imponer formato de persistencia.
+Contrato de salida del módulo de asociación. No es un componente con lógica ni una entidad de dominio.
 
 ---
 
@@ -236,7 +229,7 @@ El módulo ocupa el espacio entre entidades de dominio ya materializadas y cualq
 | **Memoria** | v0.1 carga todo en memoria; exportaciones grandes pueden agotar RAM. | Documentar límite; diferir procesamiento incremental a versiones futuras. |
 | **Registros agregados** | Step count diario puede cumplir contención temporal dentro de un entrenamiento y producir asociaciones semánticamente cuestionables. | Aceptado en v0.1; reglas específicas reservadas para versiones futuras. |
 | **Desempate ambiguo** | "Coincidencia más específica" no está formalizada numéricamente en `NEXT_MODULE.md`. | Definir criterio explícito en implementación (p. ej. menor duración de intervalo del workout). |
-| **Identidad en resultados** | `AssociationResult.by_workout` usa `WorkoutRecord` como clave; instancias duplicadas o sin identificador dificultan comparación. | Consumidor debe proveer entidades con identidad estable o aceptar agrupación por referencia/objeto. |
+| **Identidad en resultados** | El criterio de identidad y agrupación de entidades en el resultado aún no está definido; instancias duplicadas o sin identificador estable pueden dificultar su consumo. | Especificar criterio de identidad antes de fijar la representación concreta de `AssociationResult`. |
 | **Reconstrucción desde SQLite** | Capa invocadora debe mapear filas SQL → entidades antes de asociar; duplica lógica del repositorio inverso. | Responsabilidad explícita de capa externa; no forma parte del módulo v0.1. |
 | **Recálculo completo** | Cada ejecución reprocessa todo; coste crece linealmente con volumen. | Aceptado en v0.1; sin cache ni actualización incremental. |
 | **Sin metadatos** | Identificadores Apple Health ignorados; asociaciones puramente temporales pueden ser imprecisas en casos límite. | Aceptado en v0.1; criterio prioritario por metadatos reservado para versiones futuras. |

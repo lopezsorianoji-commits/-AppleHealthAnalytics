@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 
+from applehealth.models import HealthRecord
+from applehealth.workout import WorkoutRecord
+
+
+@dataclass
 class AssociationResult:
-    """Contrato de salida del módulo de asociación.
+    """Representa el resultado de una asociación entre un entrenamiento y los registros de salud candidatos."""
 
-    No es un componente con lógica ni una entidad de dominio. La estructura
-    concreta permanece intencionalmente sin definir en v0.1 y será
-    especificada una vez que se establezca el criterio definitivo de
-    identidad, agrupación y representación de las asociaciones.
-    """
+    workout: WorkoutRecord
+    records: list[HealthRecord]

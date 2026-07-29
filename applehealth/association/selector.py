@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from applehealth.association.result import AssociationResult
 from applehealth.models import HealthRecord
 from applehealth.workout import WorkoutRecord
 
@@ -14,6 +15,12 @@ class AssociationSelector:
     Garantiza como máximo una asociación por ``HealthRecord``. Ante múltiples
     candidatos, selecciona la coincidencia más específica según criterio temporal.
     """
+
+    def select(
+        self,
+        associations: list[AssociationResult],
+    ) -> list[AssociationResult]:
+        return associations
 
 
 def select_best_workout(

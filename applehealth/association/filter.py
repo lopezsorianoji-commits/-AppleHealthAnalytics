@@ -16,6 +16,36 @@ class EligibilityFilter:
     """
 
 
+def _overlap(
+    workout: WorkoutRecord,
+    record: HealthRecord,
+) -> bool:
+    return (
+        record.fecha_fin >= workout.fecha_inicio
+        and record.fecha_inicio <= workout.fecha_fin
+    )
+
+
+class TemporalFilter:
+    """Filtra mediciones de salud respecto al intervalo temporal de un entrenamiento.
+
+    Recibe un ``WorkoutRecord`` y una lista de ``HealthRecord``, y devuelve
+    únicamente las mediciones elegibles para asociarse con ese entrenamiento
+    según el criterio temporal del módulo v0.1.
+    """
+
+    def filter(
+        self,
+        workout: WorkoutRecord,
+        records: list[HealthRecord],
+    ) -> list[HealthRecord]:
+        return [
+            record
+            for record in records
+            if _overlap(workout, record)
+        ]
+
+
 def filter_eligible_workouts(
     workouts: Sequence[WorkoutRecord],
 ) -> list[WorkoutRecord]:

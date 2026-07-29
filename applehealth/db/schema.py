@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS workouts (
 );
 """
 
+WORKOUT_HEALTH_RECORD_TABLE_DDL = """
+CREATE TABLE IF NOT EXISTS workout_health_record (
+    workout_id INTEGER NOT NULL,
+    health_record_id INTEGER NOT NULL,
+    PRIMARY KEY (workout_id, health_record_id)
+);
+"""
+
 QUANTITY_TABLES = ("heart_rate", "hrv", "step_count", "active_energy")
 DATE_INDEX_COLUMNS = ("start_date", "end_date", "creation_date")
 
@@ -56,4 +64,5 @@ def create_schema(connection: sqlite3.Connection) -> None:
         _create_date_indexes(cursor, table)
     cursor.execute(WORKOUTS_TABLE_DDL)
     _create_date_indexes(cursor, "workouts")
+    cursor.execute(WORKOUT_HEALTH_RECORD_TABLE_DDL)
     connection.commit()

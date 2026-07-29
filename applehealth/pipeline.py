@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from applehealth.association import AssociationFacade
 from applehealth.constants import DEFAULT_BATCH_SIZE, SQLITE_FILENAME
+from applehealth.db.collecting_repository import CollectingRepository
 from applehealth.db.connection import open_database
 from applehealth.db.repository import RecordRepository
 from applehealth.export.csv_exporter import export_all_csv
@@ -48,8 +50,11 @@ def run_pipeline(
 
     connection = open_database(sqlite_path)
     repository = RecordRepository(connection, batch_size=batch_size)
-    parser = StreamParser(xml_path, repository)
+    collecting = CollectingRepository(repository)
+    parser = StreamParser(xml_path, collecting)
     parse_counts = parser.parse()
+    facade = AssociationFacade()
+    associations = facade.associate(collecting.workouts, collecting.records)
     connection.close()
 
     connection = open_database(sqlite_path)

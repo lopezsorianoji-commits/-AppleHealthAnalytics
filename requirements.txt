@@ -1,0 +1,1 @@
+# AppleHealthAnalytics v0.1 — Python 3.12 standard library only

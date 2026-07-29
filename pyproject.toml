@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "applehealth-analytics"
+version = "0.1.0"
+description = "Local macOS tool to process Apple Health XML exports via streaming"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "AppleHealthAnalytics" }]
+dependencies = []
+
+[project.scripts]
+applehealth = "applehealth.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["applehealth*"]

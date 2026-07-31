@@ -99,6 +99,18 @@ def test_get_associated_health_records(output_dir: Path) -> None:
     ]
 
 
+def test_get_health_record(output_dir: Path) -> None:
+    run_pipeline(SAMPLE_XML, output_dir)
+    connection = open_database(output_dir / SQLITE_FILENAME)
+    repository = RecordRepository(connection)
+    reference = repository.get_associated_health_records(1)[0]
+    row = repository.get_health_record(reference)
+    connection.close()
+
+    assert row is not None
+    assert row["id"] == reference.health_record_id
+
+
 def test_summary_json_structure(output_dir: Path) -> None:
     run_pipeline(SAMPLE_XML, output_dir)
     summary = json.loads((output_dir / SUMMARY_JSON).read_text(encoding="utf-8"))

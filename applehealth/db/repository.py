@@ -38,6 +38,8 @@ WORKOUT_COLUMNS = (
     "total_energy_burned_unit",
 )
 
+_HEALTH_RECORD_TABLES = frozenset({"heart_rate", "hrv", "step_count", "active_energy"})
+
 _QUANTITY_ATTR_MAP: dict[str, str] = {
     "source_name": "fuente_origen",
     "device": "dispositivo",
@@ -181,6 +183,18 @@ class RecordRepository:
             )
             for row in rows
         ]
+
+    def get_health_record(
+        self,
+        reference: HealthRecordReference,
+    ) -> sqlite3.Row | None:
+        """Return the persisted health record row for a reference, if it exists."""
+        if reference.health_record_table not in _HEALTH_RECORD_TABLES:
+            return None
+        return self._connection.execute(
+            f"SELECT * FROM {reference.health_record_table} WHERE id = ?",
+            (reference.health_record_id,),
+        ).fetchone()
 
     def _flush_table(self, table: str) -> None:
         buffer = self._buffers[table]

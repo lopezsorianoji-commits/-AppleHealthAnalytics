@@ -6,6 +6,7 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
+from applehealth.association.result import AssociationResult
 from applehealth.models import HealthRecord
 from applehealth.workout import WorkoutRecord
 
@@ -98,9 +99,16 @@ class RecordRepository:
             "workouts": [],
         }
         self.counts: dict[str, int] = {key: 0 for key in self._buffers}
+        self._pending_workouts: list[WorkoutRecord] = []
+        self._pending_quantity: dict[str, list[HealthRecord]] = {
+            table: [] for table in ("heart_rate", "hrv", "step_count", "active_energy")
+        }
+        self._workout_db_ids: dict[int, int] = {}
+        self._health_record_refs: dict[int, tuple[str, int]] = {}
 
     def add_quantity(self, table: str, record: HealthRecord) -> None:
         """Queue a quantity record (heart rate, HRV, steps, energy)."""
+        self._pending_quantity[table].append(record)
         row = tuple(
             _quantity_column_value(record, column)
             for column in QUANTITY_COLUMNS
@@ -112,6 +120,7 @@ class RecordRepository:
 
     def add_workout(self, record: WorkoutRecord) -> None:
         """Queue a workout record."""
+        self._pending_workouts.append(record)
         row = tuple(
             _workout_column_value(record, column)
             for column in WORKOUT_COLUMNS
@@ -127,10 +136,34 @@ class RecordRepository:
             self._flush_table(table)
         self._connection.commit()
 
+    def save_associations(self, associations: list[AssociationResult]) -> None:
+        """Persist workout-to-health-record associations."""
+        rows: list[tuple[int, str, int]] = []
+        for association in associations:
+            workout_id = self._workout_db_ids[id(association.workout)]
+            for record in association.records:
+                health_record_table, health_record_id = self._health_record_refs[id(record)]
+                rows.append((workout_id, health_record_table, health_record_id))
+        if not rows:
+            return
+        self._connection.executemany(
+            "INSERT INTO workout_health_record "
+            "(workout_id, health_record_table, health_record_id) VALUES (?, ?, ?)",
+            rows,
+        )
+        self._connection.commit()
+
     def _flush_table(self, table: str) -> None:
         buffer = self._buffers[table]
         if not buffer:
             return
+        row_count = len(buffer)
+        if table == "workouts":
+            entities = self._pending_workouts[:row_count]
+            del self._pending_workouts[:row_count]
+        else:
+            entities = self._pending_quantity[table][:row_count]
+            del self._pending_quantity[table][:row_count]
         if table == "workouts":
             columns = ", ".join(WORKOUT_COLUMNS)
             placeholders = ", ".join("?" for _ in WORKOUT_COLUMNS)
@@ -138,5 +171,18 @@ class RecordRepository:
             columns = ", ".join(QUANTITY_COLUMNS)
             placeholders = ", ".join("?" for _ in QUANTITY_COLUMNS)
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        last_id = self._connection.execute(
+            f"SELECT COALESCE(MAX(id), 0) FROM {table}"
+        ).fetchone()[0]
         self._connection.executemany(sql, buffer)
+        new_ids = self._connection.execute(
+            f"SELECT id FROM {table} WHERE id > ? ORDER BY id",
+            (last_id,),
+        ).fetchall()
+        if table == "workouts":
+            for entity, (row_id,) in zip(entities, new_ids, strict=True):
+                self._workout_db_ids[id(entity)] = row_id
+        else:
+            for entity, (row_id,) in zip(entities, new_ids, strict=True):
+                self._health_record_refs[id(entity)] = (table, row_id)
         buffer.clear()

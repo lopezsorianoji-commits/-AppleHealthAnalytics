@@ -64,6 +64,25 @@ def test_sqlite_contents(output_dir: Path) -> None:
     assert workout_count == 2
 
 
+def test_workout_health_record_associations(output_dir: Path) -> None:
+    run_pipeline(SAMPLE_XML, output_dir)
+    connection = sqlite3.connect(output_dir / SQLITE_FILENAME)
+    rows = connection.execute(
+        "SELECT workout_id, health_record_table, health_record_id "
+        "FROM workout_health_record "
+        "ORDER BY workout_id, health_record_table, health_record_id"
+    ).fetchall()
+    connection.close()
+
+    assert rows == [
+        (1, "active_energy", 1),
+        (1, "heart_rate", 1),
+        (1, "step_count", 1),
+        (2, "active_energy", 1),
+        (2, "step_count", 1),
+    ]
+
+
 def test_summary_json_structure(output_dir: Path) -> None:
     run_pipeline(SAMPLE_XML, output_dir)
     summary = json.loads((output_dir / SUMMARY_JSON).read_text(encoding="utf-8"))

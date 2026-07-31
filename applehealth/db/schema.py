@@ -40,8 +40,9 @@ CREATE TABLE IF NOT EXISTS workouts (
 WORKOUT_HEALTH_RECORD_TABLE_DDL = """
 CREATE TABLE IF NOT EXISTS workout_health_record (
     workout_id INTEGER NOT NULL,
+    health_record_table TEXT NOT NULL,
     health_record_id INTEGER NOT NULL,
-    PRIMARY KEY (workout_id, health_record_id)
+    PRIMARY KEY (workout_id, health_record_table, health_record_id)
 );
 """
 

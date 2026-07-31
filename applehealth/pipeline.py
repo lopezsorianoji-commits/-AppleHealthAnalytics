@@ -55,6 +55,7 @@ def run_pipeline(
     parse_counts = parser.parse()
     facade = AssociationFacade()
     associations = facade.associate(collecting.workouts, collecting.records)
+    repository.save_associations(associations)
     connection.close()
 
     connection = open_database(sqlite_path)

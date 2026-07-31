@@ -18,6 +18,8 @@ from applehealth.constants import (
     SUMMARY_MD,
     WORKOUTS_CSV,
 )
+from applehealth.db.connection import open_database
+from applehealth.db.repository import HealthRecordReference, RecordRepository
 from applehealth.pipeline import run_pipeline
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -80,6 +82,20 @@ def test_workout_health_record_associations(output_dir: Path) -> None:
         (1, "step_count", 1),
         (2, "active_energy", 1),
         (2, "step_count", 1),
+    ]
+
+
+def test_get_associated_health_records(output_dir: Path) -> None:
+    run_pipeline(SAMPLE_XML, output_dir)
+    connection = open_database(output_dir / SQLITE_FILENAME)
+    repository = RecordRepository(connection)
+    references = repository.get_associated_health_records(1)
+    connection.close()
+
+    assert references == [
+        HealthRecordReference("active_energy", 1),
+        HealthRecordReference("heart_rate", 1),
+        HealthRecordReference("step_count", 1),
     ]
 
 

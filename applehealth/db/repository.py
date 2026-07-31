@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
@@ -85,6 +86,14 @@ def _workout_column_value(record: WorkoutRecord, column: str) -> Any:
     return getattr(record, column, record.metadatos.get(meta_key))
 
 
+@dataclass(frozen=True)
+class HealthRecordReference:
+    """Referencia persistida a una medición de salud en SQLite."""
+
+    health_record_table: str
+    health_record_id: int
+
+
 class RecordRepository:
     """Accumulates records and flushes them to SQLite in batches."""
 
@@ -152,6 +161,26 @@ class RecordRepository:
             rows,
         )
         self._connection.commit()
+
+    def get_associated_health_records(
+        self,
+        workout_id: int,
+    ) -> list[HealthRecordReference]:
+        """Return persisted health record references associated with a workout."""
+        rows = self._connection.execute(
+            "SELECT health_record_table, health_record_id "
+            "FROM workout_health_record "
+            "WHERE workout_id = ? "
+            "ORDER BY health_record_table, health_record_id",
+            (workout_id,),
+        ).fetchall()
+        return [
+            HealthRecordReference(
+                health_record_table=row[0],
+                health_record_id=row[1],
+            )
+            for row in rows
+        ]
 
     def _flush_table(self, table: str) -> None:
         buffer = self._buffers[table]
